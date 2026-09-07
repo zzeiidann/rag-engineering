@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     llm_model: str = "mistral-small-latest"
     # JSON mapping of opaque bearer tokens to trusted Principal objects.
     auth_tokens_json: str = "{}"
+    auth_service_url: str = ""
+    auth_service_secret: str = ""
+    auth_service_timeout_seconds: float = Field(3.0, gt=0, le=30)
     debug_retrieval: bool = False
     vector_top_k: int = Field(20, ge=1, le=100)
     graph_top_k: int = Field(20, ge=1, le=100)

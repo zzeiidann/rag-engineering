@@ -11,11 +11,14 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-local-graph-password}
       CATALOG_PATH: /workspace/var/catalog.db
       FASTEMBED_CACHE_PATH: /home/appuser/.cache/fastembed
+      AUTH_SERVICE_URL: http://auth:5000
+      AUTH_SERVICE_SECRET: ${AUTH_SERVICE_SECRET:-local-introspection-secret}
     ports: ["127.0.0.1:8000:8000"]
     volumes:
       - catalog:/workspace/var
       - embeddings:/home/appuser/.cache/fastembed
     depends_on:
+      auth: {condition: service_healthy}
       milvus: {condition: service_healthy}
       neo4j: {condition: service_healthy}
     healthcheck:
@@ -23,6 +26,26 @@ services:
       interval: 30s
       timeout: 15s
       start_period: 180s
+      retries: 5
+    restart: unless-stopped
+  auth:
+    build: .
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--access-logfile", "-", "auth_service:create_app()"]
+    environment:
+      AUTH_DATABASE_PATH: /data/auth.db
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-local-session-secret-change-me}
+      AUTH_SERVICE_SECRET: ${AUTH_SERVICE_SECRET:-local-introspection-secret}
+      AUTH_BOOTSTRAP_USERNAME: ${AUTH_BOOTSTRAP_USERNAME:-admin}
+      AUTH_BOOTSTRAP_PASSWORD: ${AUTH_BOOTSTRAP_PASSWORD:-admin-change-me}
+      AUTH_TOKEN_TTL_HOURS: ${AUTH_TOKEN_TTL_HOURS:-24}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+    ports: ["127.0.0.1:5001:5000"]
+    volumes: ["auth-data:/data"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)"]
+      interval: 15s
+      timeout: 10s
+      start_period: 10s
       retries: 5
     restart: unless-stopped
   milvus:
@@ -86,6 +109,7 @@ services:
       start_period: 30s
       retries: 10
 volumes:
+  auth-data:
   catalog:
   embeddings:
   milvus:

@@ -8,7 +8,11 @@ Ordinary RAG ranks by relevance. That is insufficient when the closest match bel
 
 ```mermaid
 flowchart TD
-    Q[POST /query] --> A[Trusted bearer identity / anonymous guest]
+    U[Vanilla JS admin UI] --> CP[Flask auth control plane]
+    CP --> ID[(Users, departments, token hashes)]
+    Q[POST /query] --> A[Bearer token / anonymous guest]
+    A --> CP
+    CP -->|Trusted Principal| A
     A --> P[Deterministic authorization resolver]
     C[(SQLite catalog: authoritative ACLs and active versions)] --> P
     P --> S[Allowed document-version keys]
@@ -45,7 +49,24 @@ Supported employee permissions:
 
 Client and guest identities cannot contain employee permissions. Internal employees do not inherit client access through their department. There is no wildcard client grant.
 
-The API uses opaque bearer tokens mapped to server-side identities through `AUTH_TOKENS_JSON`. Requests without authentication are guests; invalid tokens return 401. The optional `principal` request field is an assertion that must exactly match the authenticated identity, not a way to choose permissions. Replace the token-map adapter with verified OIDC/JWT claims for a deployed service.
+The Flask control plane issues opaque bearer tokens and stores only their SHA-256 hashes. FastAPI sends each supplied token to the private introspection endpoint using a shared service secret. Introspection reads the user's current role, client, department, permissions and active state, so admin changes apply to the next request without re-indexing. Requests without authentication are guests; invalid, expired, revoked or disabled-user tokens return 401. If the auth service is unavailable, FastAPI fails closed with 503.
+
+`AUTH_TOKENS_JSON` remains available as a development fallback when `AUTH_SERVICE_URL` is empty. Docker Compose enables the Flask control plane, so the fallback mapping is ignored there. The optional `principal` request field is only a compatibility assertion and must exactly match the authenticated identity; callers cannot use it to choose access.
+
+### Login and admin control plane
+
+Open `http://localhost:5001/admin`. On a fresh local volume, Compose bootstraps the credentials configured by `AUTH_BOOTSTRAP_USERNAME` and `AUTH_BOOTSTRAP_PASSWORD`. The password is used only when the first administrator is created; changing the environment later does not overwrite that account.
+
+The vanilla JavaScript interface supports:
+
+- creating and editing guest, client and internal users;
+- assigning client IDs and departments with role-aware validation;
+- granting explicit permissions such as `client:read:client_a`;
+- disabling accounts and resetting passwords;
+- issuing copy-once, expiring bearer tokens and revoking all user tokens;
+- creating departments and preventing deletion while users are assigned.
+
+Admin sessions use HTTP-only, SameSite=Strict cookies and CSRF tokens. Passwords use Werkzeug's scrypt hash. Bearer tokens are returned once and never stored in plaintext. Set `AUTH_COOKIE_SECURE=true` behind HTTPS. Replace the local password login with corporate OIDC/JWT federation when deploying across an organization.
 
 ## Retrieval and knowledge graph
 
@@ -69,24 +90,27 @@ Prerequisites: Docker Engine/Desktop with Compose v2.24+ and enough memory for M
 
 ```bash
 cp .env.example .env
-# Edit .env: set LLM_API_KEY to a Mistral API key.
+# Edit .env: set LLM credentials and replace every AUTH_* demo secret/password.
 docker compose up -d --build
 docker compose logs -f api
 curl http://localhost:8000/health
 ```
 
-The Compose file includes API, Milvus, etcd, MinIO and Neo4j with persistent volumes and health checks. API startup waits for the databases; the first embedding download may take several minutes. If your installation provides the standalone command, use `docker-compose` in place of `docker compose`.
+The Compose file includes FastAPI, Flask auth, Milvus, etcd, MinIO and Neo4j with persistent volumes and health checks. API startup waits for auth and both databases; the first embedding download may take several minutes. If your installation provides the standalone command, use `docker-compose` in place of `docker compose`.
 
-The example tokens and database credentials are deliberately public local-demo values. Change them before loading real data. Ports bind to localhost; MinIO and etcd are not exposed. The API runs as a non-root user with exactly one worker. Model weights persist in a separate volume.
+The fallback tokens and default database/auth credentials are deliberately local-demo values. Change them before loading real data. Ports bind to localhost; MinIO and etcd are not exposed. API and auth run as a non-root user with exactly one worker each. Model weights persist in a separate volume.
 
-Seed the nine synthetic documents through the API (no LLM key is needed for indexing):
+Sign in at the admin UI and copy the admin login token, or obtain it from the login API. Then seed the nine synthetic documents (no LLM key is needed for indexing):
 
 ```bash
-docker compose exec -e INGEST_TOKEN=demo-ingest api \
+curl -s http://localhost:5001/api/login -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"your-bootstrap-password"}'
+
+docker compose exec -e INGEST_TOKEN='paste-login-token-here' api \
   python -m scripts.seed_demo_data --api-url http://localhost:8000
 ```
 
-Open API documentation at `http://localhost:8000/docs` and Neo4j Browser at `http://localhost:7474`.
+Open the auth admin at `http://localhost:5001/admin`, API documentation at `http://localhost:8000/docs`, and Neo4j Browser at `http://localhost:7474`.
 
 Milvus also provides a built-in monitoring WebUI at `http://localhost:9091/webui/`.
 To start Milvus and its dependencies alone, run `docker compose up -d milvus`.
@@ -203,7 +227,7 @@ The trusted boundary includes administrators assigning ACLs, server-side authent
 
 ## Limitations and future work
 
-- Single API worker, synchronous ingestion and serialized queries prioritize inspectability over throughput. Move to transactional catalog revisions, background ingestion and coordinated revocation before horizontal scaling.
+- SQLite auth and catalog stores plus single workers prioritize inspectability over throughput. Move identities to PostgreSQL, add distributed rate limiting/audit history, federate OIDC, and coordinate catalog revisions before horizontal scaling.
 - Catalog scope resolution is linear and Milvus receives an explicit ID list. Large installations need indexed policy lookups, scope batching or carefully equivalent database-native ACL predicates.
 - Scoped entity copies intentionally limit cross-document graph reasoning. Add provenance-aware entity resolution without merging authorization boundaries.
 - Structured extraction and lexical graph seeding are simple. Add curated entity aliases, richer extraction, cross-encoder ranking and a larger independently judged evaluation set.
@@ -215,4 +239,4 @@ Milvus service topology follows the [upstream standalone Compose configuration](
 
 ## Repository map
 
-`app/auth` owns deterministic policy and scope resolution; `app/catalog.py` owns active revisions; `app/vectorstore` and `app/graph` own database adapters; `app/ingestion` owns loading, hashing and extraction; `app/retrieval` owns retrieval/fusion/reranking; `app/llm` owns provider calls; `app/api` owns HTTP/authentication; `app/container.py` wires dependencies. Demo and benchmark tools live under `scripts`, and security, ingestion and integration tests under `tests`.
+`auth_service` owns Flask login, token introspection, identity persistence and the vanilla JS admin UI. `app/auth` owns deterministic resource policy and scope resolution; `app/catalog.py` owns active revisions; `app/vectorstore` and `app/graph` own database adapters; `app/ingestion` owns loading, hashing and extraction; `app/retrieval` owns retrieval/fusion/reranking; `app/llm` owns provider calls; `app/api` owns RAG HTTP endpoints; `app/container.py` wires dependencies. Demo and benchmark tools live under `scripts`, and security, auth, ingestion and integration tests under `tests`.

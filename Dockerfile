@@ -3,10 +3,11 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /usr/local/bin/uv
 WORKDIR /workspace
 COPY pyproject.toml uv.lock ./
 COPY app ./app
+COPY auth_service ./auth_service
 RUN uv sync --frozen --no-dev
 COPY scripts ./scripts
 COPY data ./data
-RUN useradd --uid 10001 --create-home appuser && mkdir -p var /home/appuser/.cache/fastembed && chown -R appuser:appuser var /home/appuser/.cache
+RUN useradd --uid 10001 --create-home appuser && mkdir -p var /data /home/appuser/.cache/fastembed && chown -R appuser:appuser var /data /home/appuser/.cache
 USER appuser
 ENV PATH="/workspace/.venv/bin:$PATH" PYTHONUNBUFFERED=1
 EXPOSE 8000

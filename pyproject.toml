@@ -11,11 +11,12 @@ dependencies = [
   "fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1", "pydantic-settings>=2.8,<3",
   "pymilvus>=2.6,<2.7", "neo4j>=5.28,<6", "httpx>=0.28,<1",
   "fastembed>=0.6,<0.8", "pypdf>=5,<7", "python-multipart>=0.0.20,<1",
+  "flask>=3.1,<4", "gunicorn>=23,<24",
 ]
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["app", "auth_service"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["integration: requires live Milvus and Neo4j"]

@@ -35,6 +35,11 @@ def create_app(
         }
         if any(not token for token in api.state.identities):
             raise ValueError("Authentication tokens must not be empty")
+        api.state.auth_service_url = config.auth_service_url.rstrip("/")
+        api.state.auth_service_secret = config.auth_service_secret
+        api.state.auth_service_timeout_seconds = config.auth_service_timeout_seconds
+        if api.state.auth_service_url and not api.state.auth_service_secret:
+            raise ValueError("AUTH_SERVICE_SECRET is required when AUTH_SERVICE_URL is configured")
         yield
         graph = api.state.service.ingestion.graph
         if hasattr(graph, "driver"):
