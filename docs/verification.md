@@ -17,6 +17,8 @@ Verified on 2026-09-07 with Python 3.11.14 and the committed dependency lockfile
 
 The in-memory results are regression evidence, not live Milvus/Neo4j performance results. Real BGE embeddings were also tested with the same in-memory stores; those six synthetic scenarios achieved Recall@5 and MRR of 1.0. These small fixtures are not representative retrieval-quality benchmarks.
 
-The local machine has a Docker CLI and standalone Compose, but no running Docker engine or Docker Desktop application. Container builds, live database integration and the live semantic benchmark could not be executed here. A separate CI database job and opt-in test are included. No actual LLM provider call was made because no API key was configured; adapter request serialization and context isolation were tested with recording/mocked clients.
+During the initial verification, the local machine had no running Docker engine, so container builds, live database integration and the live semantic benchmark could not be executed. A separate CI database job and opt-in test are included. No actual LLM provider call was made because no API key was configured; adapter request serialization and context isolation were tested with recording/mocked clients.
+
+Later on 2026-09-07, Docker Desktop 4.89.0 was installed and Docker Engine 29.7.2 started successfully. Milvus 2.6.13, etcd and MinIO now run locally and all three containers report healthy. MinIO's health check was corrected to use its bundled `mc ready local` command because its image does not contain curl. Milvus `/healthz` returned `OK`, `/webui/` returned HTTP 200, and the WebUI was opened in Arc at `http://localhost:9091/webui/`. This startup check does not establish successful document indexing; Neo4j/API startup and end-to-end indexing remain unverified.
 
 Pytest reports two upstream Starlette/httpx deprecation warnings; they do not fail the suite.

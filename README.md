@@ -86,7 +86,12 @@ docker compose exec -e INGEST_TOKEN=demo-ingest api \
   python -m scripts.seed_demo_data --api-url http://localhost:8000
 ```
 
-Open API documentation at `http://localhost:8000/docs` and Neo4j Browser at `http://localhost:7474`. Start only databases for host development:
+Open API documentation at `http://localhost:8000/docs` and Neo4j Browser at `http://localhost:7474`.
+
+Milvus also provides a built-in monitoring WebUI at `http://localhost:9091/webui/`.
+To start Milvus and its dependencies alone, run `docker compose up -d milvus`.
+
+For host development, start only the databases:
 
 ```bash
 uv sync --frozen

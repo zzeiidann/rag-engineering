@@ -37,7 +37,9 @@ class MilvusVectorStore:
         ]
         if rows:
             self.client.upsert(self.collection, rows)
-        self.client.flush(self.collection)
+        # Milvus seals growing segments asynchronously. Calling flush for every
+        # document hits the server's strict flush rate limiter during ingestion;
+        # strong-consistency searches still observe completed upserts.
 
     def search(
         self, embedding: list[float], scope: list[str], top_k: int, threshold: float
