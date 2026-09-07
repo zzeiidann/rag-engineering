@@ -1,0 +1,103 @@
+[
+  {
+    "id": "public_brochure",
+    "file": "public_brochure.md",
+    "title": "public brochure",
+    "metadata": {
+      "visibility": "public"
+    }
+  },
+  {
+    "id": "public_faq",
+    "file": "public_faq.md",
+    "title": "public faq",
+    "metadata": {
+      "visibility": "public"
+    }
+  },
+  {
+    "id": "client_a_policy",
+    "file": "client_a_policy.md",
+    "title": "client a policy",
+    "metadata": {
+      "visibility": "client",
+      "owner_client_id": "client_a",
+      "allowed_roles": [
+        "client",
+        "internal"
+      ]
+    }
+  },
+  {
+    "id": "client_a_coverage",
+    "file": "client_a_coverage.md",
+    "title": "client a coverage",
+    "metadata": {
+      "visibility": "client",
+      "owner_client_id": "client_a",
+      "allowed_roles": [
+        "client",
+        "internal"
+      ]
+    }
+  },
+  {
+    "id": "client_b_policy",
+    "file": "client_b_policy.md",
+    "title": "client b policy",
+    "metadata": {
+      "visibility": "client",
+      "owner_client_id": "client_b",
+      "allowed_roles": [
+        "client",
+        "internal"
+      ]
+    }
+  },
+  {
+    "id": "client_b_coverage",
+    "file": "client_b_coverage.md",
+    "title": "client b coverage",
+    "metadata": {
+      "visibility": "client",
+      "owner_client_id": "client_b",
+      "allowed_roles": [
+        "client",
+        "internal"
+      ]
+    }
+  },
+  {
+    "id": "actuarial_pricing",
+    "file": "actuarial_pricing.md",
+    "title": "actuarial pricing",
+    "metadata": {
+      "visibility": "internal",
+      "allowed_departments": [
+        "actuarial"
+      ]
+    }
+  },
+  {
+    "id": "claims_sop",
+    "file": "claims_sop.md",
+    "title": "claims sop",
+    "metadata": {
+      "visibility": "internal",
+      "allowed_departments": [
+        "claims"
+      ]
+    }
+  },
+  {
+    "id": "sales_playbook",
+    "file": "sales_playbook.md",
+    "title": "sales playbook",
+    "metadata": {
+      "visibility": "internal",
+      "allowed_departments": [
+        "sales"
+      ]
+    }
+  }
+]

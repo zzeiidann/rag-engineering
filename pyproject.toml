@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "authorization-graph-rag"
+version = "0.1.0"
+description = "Authorization-first hybrid vector and knowledge graph retrieval"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1", "pydantic-settings>=2.8,<3",
+  "pymilvus>=2.6,<2.7", "neo4j>=5.28,<6", "httpx>=0.28,<1",
+  "fastembed>=0.6,<0.8", "pypdf>=5,<7", "python-multipart>=0.0.20,<1",
+]
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: requires live Milvus and Neo4j"]
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.11"
+ignore_missing_imports = true
+check_untyped_defs = true
