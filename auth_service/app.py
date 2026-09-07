@@ -53,10 +53,19 @@ def create_app(settings: AuthSettings | None = None) -> Flask:
 
         return cast(F, wrapped)
 
-    @app.get("/")
     @app.get("/admin")
     def index() -> str:
         return render_template("index.html")
+
+    from auth_service.workspace import workspace
+
+    app.register_blueprint(workspace)
+
+    @app.after_request
+    def prevent_private_caching(response: Response) -> Response:
+        if request.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.get("/health")
     def health() -> Response:
@@ -71,20 +80,33 @@ def create_app(settings: AuthSettings | None = None) -> Flask:
             return jsonify(error="invalid_credentials"), 401
         token, expires_at = repo().issue_token(user["id"], config.token_ttl_hours)
         session.clear()
-        if user["is_admin"]:
-            session["user_id"] = user["id"]
-            session["csrf_token"] = secrets.token_urlsafe(32)
-        return jsonify(
+        session["user_id"] = user["id"]
+        session["csrf_token"] = secrets.token_urlsafe(32)
+        response = jsonify(
             user=user,
             token=token,
             expires_at=expires_at,
             csrf_token=session.get("csrf_token"),
         )
+        response.set_cookie(
+            "rag_token",
+            token,
+            httponly=True,
+            secure=config.cookie_secure,
+            samesite="Strict",
+            max_age=config.token_ttl_hours * 3600,
+        )
+        return response
 
     @app.post("/api/logout")
     def logout() -> Response:
+        token = request.cookies.get("rag_token")
+        if token:
+            repo().revoke_token(token)
         session.clear()
-        return jsonify(status="ok")
+        response = jsonify(status="ok")
+        response.delete_cookie("rag_token")
+        return response
 
     @app.get("/api/me")
     @admin_required

@@ -14,3 +14,4 @@ class AuthSettings:
         self.bootstrap_password = os.getenv("AUTH_BOOTSTRAP_PASSWORD", "admin-change-me")
         self.cookie_secure = env_bool("AUTH_COOKIE_SECURE")
         self.token_ttl_hours = int(os.getenv("AUTH_TOKEN_TTL_HOURS", "24"))
+        self.rag_api_url = os.getenv("RAG_API_URL", "http://127.0.0.1:8000").rstrip("/")

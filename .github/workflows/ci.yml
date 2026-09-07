@@ -11,9 +11,10 @@ jobs:
           python-version: "3.11"
       - run: uv sync --frozen
       - run: uv run pytest -q
-      - run: uv run ruff check app scripts tests
-      - run: uv run ruff format --check app scripts tests
-      - run: uv run mypy app
+      - run: uv run ruff check app auth_service scripts tests
+      - run: uv run ruff format --check app auth_service scripts tests
+      - run: uv run mypy app auth_service
+      - run: node --check auth_service/static/workspace.js
       - run: uv run python scripts/benchmark_retrieval.py --offline
       - run: docker compose config --quiet
   databases:

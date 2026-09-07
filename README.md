@@ -240,3 +240,41 @@ Milvus service topology follows the [upstream standalone Compose configuration](
 ## Repository map
 
 `auth_service` owns Flask login, token introspection, identity persistence and the vanilla JS admin UI. `app/auth` owns deterministic resource policy and scope resolution; `app/catalog.py` owns active revisions; `app/vectorstore` and `app/graph` own database adapters; `app/ingestion` owns loading, hashing and extraction; `app/retrieval` owns retrieval/fusion/reranking; `app/llm` owns provider calls; `app/api` owns RAG HTTP endpoints; `app/container.py` wires dependencies. Demo and benchmark tools live under `scripts`, and security, auth, ingestion and integration tests under `tests`.
+## Sun Life browser workspace
+
+The local demo uses the [Sun Life logo from its corporate website](https://www.sunlife.com/content/dam/sunlife/global/logos/sun-life/current/sun-life-weblogo-127x31.svg),
+stored in `auth_service/static/sun-life-logo.svg` with its original proportions and colors.
+This repository is an independent portfolio project, not an official Sun Life product.
+
+The assistant and access-management screens share the enterprise theme in
+`auth_service/static/tokens.css`: system sans-serif typography, neutral surfaces,
+blue accents, and compact controls. Workspace and admin component styles live in
+`workspace.css` and `styles.css`. Source identifiers expand on demand; single and
+comma-separated source citations link to the reference panel. The interface adapts
+from a two-column laptop workspace to stacked panels on smaller screens.
+
+Open **http://localhost:5001/** for the RAG workspace; access management remains at
+**http://localhost:5001/admin**. The vanilla-JavaScript interface includes guest access,
+account login, a scoped document library, question history for the current page session,
+and answers with clickable source citations. History is not sent as conversation context
+and is cleared on account changes. No answers or bearer tokens are persisted in localStorage.
+
+The Flask same-origin gateway takes identity from a validated HttpOnly cookie, never from
+a browser-supplied principal. The existing RAG API still authorizes retrieval before generation.
+Library rows show metadata, not full document previews. The UI renders model output as text,
+not executable HTML. Admin privileges do not automatically grant access to all client records.
+
+With the full Docker stack, run `docker compose up -d --build`.
+For the existing setup with the RAG API running in a host terminal, run:
+
+```bash
+RAG_API_URL=http://host.docker.internal:8000 docker compose up -d --build auth
+```
+
+The host API must use `AUTH_SERVICE_URL=http://localhost:5001` and the same
+`AUTH_SERVICE_SECRET` as Flask. For Flask running directly on the host, set
+`RAG_API_URL=http://127.0.0.1:8000`. The auth server uses threaded workers so API calls can
+introspect identity while a browser request waits for generation. A per-worker limit of two
+upstream requests reserves authentication capacity; excess requests receive HTTP 429.
+Keep at least four threads per worker. For deployment, use HTTPS,
+`AUTH_COOKIE_SECURE=true`, strong session/service secrets, and non-demo passwords.

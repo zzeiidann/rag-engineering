@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light;
+  --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ink: #243247;
+  --muted: #617086;
+  --line: #dfe5ec;
+  --paper: #f4f6f9;
+  --white: #fff;
+  --accent: #205bb0;
+  --accent-hover: #17498f;
+  --accent-soft: #edf3fc;
+  --red: #a33932;
+  --red-soft: #fff5f4;
+  --radius: 8px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  font: 14px/1.5 var(--font);
+  color: var(--ink);
+  background: var(--paper);
+}
+* {
+  box-sizing: border-box;
+}
+.company-logo {
+  display: block;
+  width: 127px;
+  height: 31px;
+  object-fit: contain;
+}
+body {
+  margin: 0;
+  font-family: var(--font);
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+button,
+a,
+input,
+textarea,
+select {
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+a {
+  color: var(--accent);
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex="-1"]:focus-visible {
+  outline: 3px solid #7ca7e5;
+  outline-offset: 2px;
+}
+[hidden],
+.hidden {
+  display: none !important;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+  font-weight: 650;
+}
+h2 {
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+input,
+select,
+textarea {
+  background: var(--white);
+  border: 1px solid #bdc8d6;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #748195;
+}
+label {
+  font-size: 12px;
+  font-weight: 600;
+}
+dialog {
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 20px 65px #14243c33;
+}
+dialog::backdrop {
+  background: #18263b70;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

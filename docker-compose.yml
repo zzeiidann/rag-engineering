@@ -30,9 +30,10 @@ services:
     restart: unless-stopped
   auth:
     build: .
-    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--access-logfile", "-", "auth_service:create_app()"]
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "90", "auth_service:create_app()"]
     environment:
       AUTH_DATABASE_PATH: /data/auth.db
+      RAG_API_URL: ${RAG_API_URL:-http://api:8000}
       AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-local-session-secret-change-me}
       AUTH_SERVICE_SECRET: ${AUTH_SERVICE_SECRET:-local-introspection-secret}
       AUTH_BOOTSTRAP_USERNAME: ${AUTH_BOOTSTRAP_USERNAME:-admin}

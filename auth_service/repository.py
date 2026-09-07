@@ -306,3 +306,10 @@ class AuthRepository:
                 (utc_now().isoformat(), user_id),
             )
         return cursor.rowcount
+
+    def revoke_token(self, token: str) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                "UPDATE api_tokens SET revoked_at=? WHERE token_hash=?",
+                (utc_now().isoformat(), hashlib.sha256(token.encode()).hexdigest()),
+            )
