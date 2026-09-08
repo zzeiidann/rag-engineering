@@ -15,6 +15,8 @@ class Entity(BaseModel):
         "Contract",
         "Procedure",
         "InternalResource",
+        "WebPage",
+        "Topic",
     ]
     name: str = Field(min_length=1, max_length=300)
 

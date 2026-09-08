@@ -59,12 +59,13 @@ class Neo4jGraphRepository:
                 id=document.id,
             ).consume()
             # Relationship types are from the validated enum, never user query strings.
-            for edge in edges:
+            # Grouping keeps pages with many structured sections to one write per edge type.
+            for kind in sorted({edge["kind"] for edge in edges}):
                 tx.run(
-                    "MATCH (a:Entity {id:$source}), (b:Entity {id:$target}) "
-                    f"CREATE (a)-[:{edge['kind']} {{category:'knowledge'}}]->(b)",
-                    source=edge["source"],
-                    target=edge["target"],
+                    "UNWIND $edges AS edge "
+                    "MATCH (a:Entity {id:edge.source}), (b:Entity {id:edge.target}) "
+                    f"CREATE (a)-[:{kind} {{category:'knowledge'}}]->(b)",
+                    edges=[edge for edge in edges if edge["kind"] == kind],
                 ).consume()
             if document.metadata.owner_client_id:
                 tx.run(

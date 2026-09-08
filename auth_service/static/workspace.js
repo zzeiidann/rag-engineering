@@ -200,6 +200,95 @@ function renderHistory() {
   if (!state.history.length)
     $("history").append(node("p", "Your questions will appear here.", "quiet"));
 }
+function appendInlineMarkdown(target, text, sources) {
+  const tokenPattern = /(\[[^\]\n]+\]|\*\*[^*\n]+\*\*|`[^`\n]+`)/g;
+  for (const part of text.split(tokenPattern)) {
+    if (!part) continue;
+    if (part.startsWith("**") && part.endsWith("**")) {
+      target.append(node("strong", part.slice(2, -2)));
+      continue;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      target.append(node("code", part.slice(1, -1), "inline-code"));
+      continue;
+    }
+    const identifiers =
+      part.startsWith("[") && part.endsWith("]")
+        ? part
+            .slice(1, -1)
+            .split(",")
+            .map((id) => id.trim())
+        : [];
+    const indices = identifiers.map((id) => {
+      if (/^\d+$/.test(id)) {
+        const index = Number(id) - 1;
+        return index >= 0 && index < sources.length ? index : -1;
+      }
+      return sources.findIndex((source) => source.source_id === id);
+    });
+    if (!indices.length || indices.some((index) => index < 0)) {
+      target.append(document.createTextNode(part));
+      continue;
+    }
+    for (const index of indices) {
+      const cite = node("button", `[${index + 1}]`, "citation");
+      cite.setAttribute("aria-label", `Go to source ${index + 1}`);
+      cite.onclick = () => {
+        $(`source-${index}`).scrollIntoView({ block: "center", behavior: "smooth" });
+        $(`source-${index}`).focus();
+      };
+      target.append(cite);
+    }
+  }
+}
+function renderAnswer(answer, sources) {
+  const container = $("answer");
+  container.replaceChildren();
+  let paragraph = [];
+  let list;
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const element = node("p");
+    appendInlineMarkdown(element, paragraph.join(" "), sources);
+    container.append(element);
+    paragraph = [];
+  };
+  const flushList = () => {
+    if (!list) return;
+    container.append(list);
+    list = undefined;
+  };
+  for (const line of answer.split("\n")) {
+    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
+    const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      const element = node("h3");
+      appendInlineMarkdown(element, heading[1], sources);
+      container.append(element);
+    } else if (unordered || ordered) {
+      flushParagraph();
+      const tag = ordered ? "ol" : "ul";
+      if (!list || list.tagName.toLowerCase() !== tag) {
+        flushList();
+        list = document.createElement(tag);
+      }
+      const item = node("li");
+      appendInlineMarkdown(item, (unordered || ordered)[1], sources);
+      list.append(item);
+    } else if (!line.trim()) {
+      flushParagraph();
+      flushList();
+    } else {
+      flushList();
+      paragraph.push(line.trim());
+    }
+  }
+  flushParagraph();
+  flushList();
+}
 function showResult(query, data) {
   $("welcome").hidden = true;
   $("starters").hidden = true;
@@ -233,41 +322,17 @@ function showResult(query, data) {
       node("small", source.source_id),
     );
     card.append(details);
+    if (source.source_url) {
+      const link = node("a", "Open source ↗", "source-link");
+      link.href = source.source_url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      card.append(link);
+    }
     $("sources").append(card);
   });
-  // Treat all model text as text, never HTML. Only known source IDs become links.
-  $("answer").replaceChildren();
-  for (const paragraph of data.answer.split(/\n\s*\n/)) {
-    const p = node("p");
-    for (const part of paragraph.split(/(\[[^\]\n]+\])/g)) {
-      const identifiers =
-        part.startsWith("[") && part.endsWith("]")
-          ? part
-              .slice(1, -1)
-              .split(",")
-              .map((id) => id.trim())
-          : [];
-      const indices = identifiers.map((id) =>
-        sources.findIndex((s) => s.source_id === id),
-      );
-      if (!indices.length || indices.some((index) => index < 0))
-        p.append(document.createTextNode(part));
-      else
-        for (const index of indices) {
-          const cite = node("button", `[${index + 1}]`, "citation");
-          cite.setAttribute("aria-label", `Go to source ${index + 1}`);
-          cite.onclick = () => {
-            $(`source-${index}`).scrollIntoView({
-              block: "center",
-              behavior: "smooth",
-            });
-            $(`source-${index}`).focus();
-          };
-          p.append(cite);
-        }
-    }
-    $("answer").append(p);
-  }
+  // Render a constrained Markdown subset with DOM nodes only; model HTML is never executed.
+  renderAnswer(data.answer, sources);
 }
 async function ask(query) {
   if (state.busy || !query.trim()) return;

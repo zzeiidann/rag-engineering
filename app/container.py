@@ -37,5 +37,7 @@ def build_service(settings: Settings) -> QueryService:
         ScoreFusionReranker(settings.alpha, settings.beta, settings.gamma),
         settings.context_top_k,
     )
-    llm = ChatCompletionsClient(settings.llm_base_url, settings.llm_api_key, settings.llm_model)
+    llm = ChatCompletionsClient(
+        settings.llm_base_url, settings.llm_api_key, settings.llm_model, settings.llm_max_tokens
+    )
     return QueryService(resolver, retriever, llm, pipeline, settings.debug_retrieval)

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_base_url: str = "https://api.mistral.ai/v1"
     llm_model: str = "mistral-small-latest"
+    llm_max_tokens: int = Field(4096, ge=128, le=16384)
     # JSON mapping of opaque bearer tokens to trusted Principal objects.
     auth_tokens_json: str = "{}"
     auth_service_url: str = ""

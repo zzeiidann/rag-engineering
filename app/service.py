@@ -62,10 +62,24 @@ class QueryService:
                     )
                 )
             )
+            source_rows = []
+            for item in context:
+                document = self.resolver.catalog.get(item.document_id)
+                source_rows.append(
+                    dict(
+                        source_id=item.source_id,
+                        document_id=item.document_id,
+                        source_url=(
+                            document.source_metadata.source_url
+                            if document and document.source_metadata
+                            else None
+                        ),
+                    )
+                )
             result: dict[str, Any] = dict(
                 query_id=query_id,
                 answer=answer,
-                sources=[dict(source_id=c.source_id, document_id=c.document_id) for c in context],
+                sources=source_rows,
                 retrieved_resources=sorted({c.document_id for c in context}),
             )
             if self.debug and "retrieval:debug" in principal.permissions:

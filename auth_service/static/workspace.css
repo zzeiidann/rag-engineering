@@ -477,6 +477,16 @@
 .source-item summary {
   cursor: pointer;
 }
+.source-link {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.source-link:hover {
+  text-decoration: underline;
+}
 .scope-note {
   padding: 14px 16px;
   border-top: 1px solid var(--line);
@@ -550,8 +560,30 @@
   padding: 0;
 }
 .answer p {
-  white-space: pre-wrap;
   margin: 12px 0 0;
+}
+.answer h3 {
+  margin: 16px 0 5px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.answer ul,
+.answer ol {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+.answer li {
+  margin: 5px 0;
+  padding-left: 2px;
+}
+.inline-code {
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface-subtle);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.9em;
 }
 .citation {
   display: inline;

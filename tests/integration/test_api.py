@@ -9,7 +9,8 @@ from scripts.demo import IDENTITIES
 
 def test_authentication_and_resource_endpoints(service):
     settings = Settings(
-        auth_tokens_json=json.dumps({"a-token": IDENTITIES["client_a"].model_dump()})
+        auth_tokens_json=json.dumps({"a-token": IDENTITIES["client_a"].model_dump()}),
+        auth_service_url="",
     )
     with TestClient(create_app(settings, service)) as client:
         assert client.get("/health").status_code == 200
@@ -40,13 +41,23 @@ def test_authorized_ingestion_api(service):
         user_id="admin", role="internal", department="engineering", permissions=["documents:write"]
     )
     with TestClient(
-        create_app(Settings(auth_tokens_json=json.dumps({"admin": admin})), service)
+        create_app(
+            Settings(auth_tokens_json=json.dumps({"admin": admin}), auth_service_url=""), service
+        )
     ) as c:
         headers = {"Authorization": "Bearer admin"}
         response = c.post(
             "/documents",
             headers=headers,
-            data={"document_id": "new", "title": "New", "metadata": '{"visibility":"public"}'},
+            data={
+                "document_id": "new",
+                "title": "New",
+                "metadata": '{"visibility":"public"}',
+                "source_metadata": (
+                    '{"source_type":"web","source_url":"https://www.sunlife.com/en/example/",'
+                    '"canonical_url":"https://www.sunlife.com/en/example/","content_hash":"abc"}'
+                ),
+            },
             files={"file": ("new.txt", b"New product coverage documentation")},
         )
         assert response.status_code == 201
@@ -55,7 +66,17 @@ def test_authorized_ingestion_api(service):
             c.post("/documents/index", headers=headers, json={"document_id": "new"}).status_code
             == 200
         )
-        assert service.resolver.catalog.get("new") is not None
+        document = service.resolver.catalog.get("new")
+        assert document is not None
+        assert document.source_metadata and document.source_metadata.source_type == "web"
+        answer = c.post(
+            "/query",
+            headers=headers,
+            json={"query": "new product coverage"},
+        )
+        assert answer.status_code == 200
+        source = next(item for item in answer.json()["sources"] if item["document_id"] == "new")
+        assert source["source_url"] == "https://www.sunlife.com/en/example/"
 
 
 def test_logs_omit_contents(service, caplog):

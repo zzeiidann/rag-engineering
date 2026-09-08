@@ -6,7 +6,7 @@ from app.api.authentication import authenticate, require_ingest
 from app.api.schemas import IndexRequest, QueryRequest
 from app.auth.models import Principal, ResourceMetadata
 from app.ingestion.loaders import load_document
-from app.models import Document
+from app.models import Document, SourceMetadata
 from app.service import QueryService
 
 router = APIRouter()
@@ -32,6 +32,7 @@ def upload_document(
     document_id: Annotated[str, Form()],
     title: Annotated[str, Form()],
     metadata: Annotated[str, Form()],
+    source_metadata: Annotated[str | None, Form()] = None,
 ) -> dict:
     require_ingest(principal)
     content = file.file.read(5_000_001)
@@ -43,6 +44,9 @@ def upload_document(
             title=title,
             text=load_document(file.filename or "", content),
             metadata=ResourceMetadata.model_validate_json(metadata),
+            source_metadata=(
+                SourceMetadata.model_validate_json(source_metadata) if source_metadata else None
+            ),
         )
         with service(request).lock:
             staged = service(request).ingestion.stage(document)

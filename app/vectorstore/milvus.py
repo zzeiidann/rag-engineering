@@ -30,7 +30,10 @@ class MilvusVectorStore:
                 document_id=c.document_id,
                 resource_key=c.resource_key,
                 text=c.text,
-                metadata=c.metadata.model_dump(),
+                metadata=dict(
+                    authorization=c.metadata.model_dump(),
+                    source=c.source_metadata.model_dump() if c.source_metadata else None,
+                ),
                 vector=e,
             )
             for c, e in zip(chunks, embeddings, strict=True)
@@ -56,10 +59,17 @@ class MilvusVectorStore:
             search_params={"metric_type": "COSINE", "params": {}},
             consistency_level="Strong",
         )
-        return [
-            Candidate(
-                chunk=Chunk.model_validate(hit["entity"]), vector_score=float(hit["distance"])
+        candidates = []
+        for hit in results[0]:
+            if float(hit["distance"]) < threshold:
+                continue
+            entity = dict(hit["entity"])
+            stored = entity.pop("metadata")
+            # Existing local collections predate provenance metadata.
+            entity["metadata"] = stored.get("authorization", stored)
+            if isinstance(stored, dict) and stored.get("source"):
+                entity["source_metadata"] = stored["source"]
+            candidates.append(
+                Candidate(chunk=Chunk.model_validate(entity), vector_score=float(hit["distance"]))
             )
-            for hit in results[0]
-            if float(hit["distance"]) >= threshold
-        ]
+        return candidates
