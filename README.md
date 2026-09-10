@@ -31,20 +31,6 @@
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    U[User / Browser] --> A[Flask auth control plane]
-    A -->|trusted Principal| API[FastAPI RAG API]
-    API --> ACL[Authorization resolver]
-    ACL --> S[Allowed resource-version scope]
-    S --> V[Milvus vector search]
-    S --> G[Neo4j graph traversal]
-    V --> F[Candidate fusion + reranker]
-    G --> F
-    F --> C[Final ACL/context validation]
-    C --> L[LLM]
-    L --> R[Answer + authorized sources]
-```
 
 ### Security invariant
 
